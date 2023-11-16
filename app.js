@@ -4,7 +4,8 @@ const express = require("express");
 const path = require("path");
 const cors = require("cors");
 const helmet = require("helmet");
-const bcrypt = require('bcrypt');
+
+const userRoutes = require('./routes/user.route');
 
 const app = express();
 
@@ -17,7 +18,11 @@ mongoose.connect(
       useNewUrlParser: true,
       useUnifiedTopology: true,
     }
-  );  
+  ).then(() => {
+    console.log('Connexion à MongoDB réussie');
+  })
+  .catch((error) => console.error('Erreur de connexion à MongoDB:', error));
+ 
 
 app.use(cors());
 app.use(express.json());
@@ -29,6 +34,9 @@ app.use(
 );
 
 app.use("/images", express.static(path.join(__dirname, "images")));
+
+// Routes
+app.use(userRoutes);
 
 
 module.exports = app;
