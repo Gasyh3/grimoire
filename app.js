@@ -4,8 +4,10 @@ const express = require("express");
 const path = require("path");
 const cors = require("cors");
 const helmet = require("helmet");
+const bodyParser = require("body-parser");
 
 const userRoutes = require('./routes/user.route');
+const bookRoutes = require('./routes/book.route');
 
 const app = express();
 
@@ -23,7 +25,12 @@ mongoose.connect(
   })
   .catch((error) => console.error('Erreur de connexion à MongoDB:', error));
  
-
+// Configurations for "body-parser"
+app.use(
+    bodyParser.urlencoded({
+      extended: true,
+    })
+  );
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -37,6 +44,6 @@ app.use("/images", express.static(path.join(__dirname, "images")));
 
 // Routes
 app.use(userRoutes);
-
+app.use(bookRoutes);
 
 module.exports = app;

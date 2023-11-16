@@ -50,7 +50,7 @@ const login = async (req, res) => {
       }
   
       // Générer un token web JSON signé
-      const token = jwt.sign({ userId: user._id }, process.env.RANDOM_TOKEN_SECRET, { expiresIn: '1h' });
+      const token = jwt.sign({ userId: user._id }, process.env.RANDOM_TOKEN_SECRET, { expiresIn: '100000s' });
   
       return res.status(200).json({ userId: user._id, token });
     } catch (error) {
