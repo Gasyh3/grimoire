@@ -12,9 +12,9 @@ router.get('/api/books/:id', BookController.getBookById);
 // Route pour récupérer les 3 livres avec la meilleure note moyenne
 router.get('/api/books/bestrating', BookController.getBestRatedBooks);
 // Route pour créer un nouveau livre avec image
-router.post('/api/books', authMiddleware, upload('create'), BookController.createBook);
+router.post('/api/books', authMiddleware, upload, BookController.createBook);
 // Route pour mettre à jour un livre par son ID
-router.put('/api/books/:id', authMiddleware, upload('modify'), BookController.updateBookById);
+router.put('/api/books/:id', authMiddleware, upload, BookController.updateBookById);
 // Route pour supprimer un livre par son ID avec l'image associée
 router.delete('/api/books/:id/', authMiddleware, BookController.deleteBookAndImageById);
 // Route pour ajouter une note à un livre par son ID

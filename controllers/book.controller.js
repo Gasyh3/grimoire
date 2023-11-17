@@ -1,6 +1,7 @@
 const Book = require('../models/book.model');
 const fs = require('fs');
 const upload = require('../middlewares/multer.middleware');
+const mongoose = require('mongoose');
 
 // Contrôleur pour récupérer tous les livres
 const getAllBooks = async (req, res) => {
@@ -59,8 +60,10 @@ const createBook = async (req, res) => {
       
         const book = new Book({
           ...bookObject,
-          imageUrl: `${req.protocol}://${req.get('host')}/${req.imagePath}`, 
-          userId: req.auth.userId,
+          imageUrl: `${req.protocol}://${req.get("host")}/images/${
+      req.file.filename
+    }`, 
+          userId: req.user.userId,
         });
       
         book.save()
@@ -69,80 +72,64 @@ const createBook = async (req, res) => {
 };
 // Contrôleur pour mettre à jour un livre par son ID
 const updateBookById = async (req, res) => {
-    try {
-      const bookId = req.params.id;
-  
-      // Vérifier si l'ID est valide
-      if (!mongoose.Types.ObjectId.isValid(bookId)) {
-        return res.status(400).json({ message: 'ID de livre invalide.' });
+    const bookObject = req.file
+    ? {
+        ...JSON.parse(req.body.book),
+        imageUrl: `${req.protocol}://${req.get("host")}/images/${
+          req.file.filename
+        }`,
       }
-  
-      // Récupérer le livre par son ID
-      const existingBook = await Book.findById(bookId);
-  
-      // Vérifier si le livre existe
-      if (!existingBook) {
-        return res.status(404).json({ message: 'Livre non trouvé.' });
-      }
-  
-      // Si une image est téléchargée, mettre à jour l'ImageUrl
-      if (req.file) {
-        const image = req.file;
-        existingBook.imageUrl = `/uploads/${image.filename}`;
-      }
-  
-      // Si les informations du livre sont fournies dans le corps de la requête
-      if (req.body.book) {
-        const { book } = req.body;
-        // Mettre à jour d'autres propriétés du livre en fonction de ce qui est inclus dans req.body.book
-        existingBook.title = book.title || existingBook.title;
-        existingBook.author = book.author || existingBook.author;
-        existingBook.year = book.year || existingBook.year;
-        existingBook.genre = book.genre || existingBook.genre;
-        // Ajouter la logique pour mettre à jour d'autres propriétés du livre si nécessaire
-      }
-  
-      // Enregistrer les modifications dans la base de données
-      await existingBook.save();
-  
-      return res.status(200).json({ message: 'Livre mis à jour avec succès.' });
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({ message: 'Erreur serveur.' });
+    : {
+        ...req.body,
+      };
+  Book.updateOne(
+    {
+      _id: req.params.id,
+    },
+    {
+      ...bookObject,
+      _id: req.params.id,
     }
+  )
+    .then(() =>
+      res.status(200).json({
+        message: "Objet modifié !",
+      })
+    )
+    .catch((error) =>
+      res.status(400).json({
+        error,
+      })
+    );
 };
 // Contrôleur pour supprimer un livre par son ID avec l'image associée
 const deleteBookAndImageById = async (req, res) => {
-    try {
-      const bookId = req.params.id;
-  
-      // Vérifier si l'ID est valide
-      if (!mongoose.Types.ObjectId.isValid(bookId)) {
-        return res.status(400).json({ message: 'ID de livre invalide.' });
-      }
-  
-      // Récupérer le livre par son ID
-      const bookToDelete = await Book.findById(bookId);
-  
-      // Vérifier si le livre existe
-      if (!bookToDelete) {
-        return res.status(404).json({ message: 'Livre non trouvé.' });
-      }
-  
-      // Supprimer l'image associée du système de fichiers
-      if (bookToDelete.imageUrl) {
-        const imagePath = path.join(__dirname, '..', 'public', bookToDelete.imageUrl);
-        fs.unlinkSync(imagePath);
-      }
-  
-      // Supprimer le livre de la base de données
-      await Book.findByIdAndRemove(bookId);
-  
-      return res.status(200).json({ message: 'Livre supprimé avec succès.' });
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({ message: 'Erreur serveur.' });
-    }
+    Book.findOne({
+        _id: req.params.id,
+      })
+        .then((book) => {
+          const filename = book.imageUrl.split("/images/")[1];
+          fs.unlink(`images/${filename}`, () => {
+            Book.deleteOne({
+              _id: req.params.id,
+            })
+              .then(() =>
+                res.status(200).json({
+                  message: "Objet supprimé !",
+                })
+              )
+              .catch((error) =>
+                res.status(400).json({
+                  error,
+                })
+              );
+          });
+        })
+        .catch((error) =>
+          res.status(500).json({
+            error,
+          })
+        );
   };
 // Contrôleur pour ajouter une note à un livre par son ID
 const addRatingToBookById = async (req, res) => {
